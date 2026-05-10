@@ -105,15 +105,17 @@ function login(){
         return;
     }
 
-    if(!/^[1-9]$/.test(pass)){
-        alert("پسورد فقط 1 تا 9");
+    pass = pass.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+
+    if(pass < 1 || pass > 9){
+        alert("پسورد فقط عدد 1 تا 9");
         return;
     }
 
     username = name;
 
-    login.style.display = "none";
-    chatPage.style.display = "block";
+    document.getElementById("login").style.display = "none";
+    document.getElementById("chatPage").style.display = "block";
 }
 
 function send(){
