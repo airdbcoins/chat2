@@ -160,6 +160,17 @@
 
     function send(){
 
+        document.getElementById("text").addEventListener("keydown", function(e){
+
+            if(e.key === "Enter"){
+
+                e.preventDefault();
+
+                send();
+            }
+
+        });
+        
         let textInput = document.getElementById("text");
 
         let imageInput = document.getElementById("image");
@@ -239,6 +250,7 @@
             el.remove();
         }
     });
+
 
 </script>
 
