@@ -6,10 +6,7 @@
     <title>Simple Chat</title>
 
     <style>
-
-        *{
-            box-sizing:border-box;
-        }
+        *{box-sizing:border-box}
 
         body{
             margin:0;
@@ -18,29 +15,22 @@
             font-family:tahoma;
         }
 
-        #login,
-        #chatPage{
+        #login,#chat{
             max-width:600px;
             margin:auto;
             padding:15px;
         }
 
-        h2{
-            text-align:center;
-        }
-
-        input,
-        button{
+        input,button{
             width:100%;
             padding:14px;
+            margin-top:10px;
             border:none;
             border-radius:12px;
-            margin-top:10px;
-            font-size:15px;
         }
 
         input{
-            background:#1e1e1e;
+            background:#1c1c1c;
             color:#fff;
         }
 
@@ -52,15 +42,16 @@
 
         #messages{
             height:70vh;
-            overflow:auto;
+            overflow-y:auto;
             padding-bottom:10px;
         }
 
         .msg{
             background:#1b1b1b;
             padding:10px;
-            border-radius:14px;
+            border-radius:12px;
             margin-top:10px;
+            word-break:break-word;
         }
 
         .name{
@@ -70,82 +61,49 @@
 
         .msg img{
             max-width:100%;
-            border-radius:12px;
-            margin-top:8px;
+            border-radius:10px;
+            margin-top:5px;
         }
-
-        .bottom{
-            position:sticky;
-            bottom:0;
-            background:#0f0f0f;
-            padding-top:10px;
-        }
-
     </style>
 </head>
 
 <body>
 
 <div id="login">
-
     <h2>ورود به چت</h2>
-
-    <input type="text" id="name" placeholder="اسم خودتو وارد کن">
-
+    <input id="name" placeholder="اسم خودتو وارد کن">
     <button onclick="login()">ورود</button>
-
 </div>
 
-<div id="chatPage" style="display:none;">
+<div id="chat" style="display:none">
 
     <div id="messages"></div>
 
-    <div class="bottom">
-
-        <input type="text" id="text" placeholder="پیام">
-
-        <input type="file" id="image">
-
-        <button onclick="send()">ارسال</button>
-
-    </div>
+    <input id="text" placeholder="پیام...">
+    <input type="file" id="image">
+    <button onclick="send()">ارسال</button>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
-
     const socket = io();
 
     let username = "";
 
-    const colors = [
-        "#ff6b6b",
-        "#4ecdc4",
-        "#ffe66d",
-        "#5fa8ff",
-        "#c77dff",
-        "#ff9f1c",
-        "#2ec4b6",
-        "#f72585"
-    ];
-
+    /* رنگ ثابت برای هر اسم */
     function getColor(name){
-
+        let colors = ["#ff4d4d","#4dd2ff","#ffd24d","#b84dff","#4dff88","#ff7ad9"];
         let hash = 0;
-
         for(let i=0;i<name.length;i++){
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            hash = name.charCodeAt(i) + ((hash<<5)-hash);
         }
-
         return colors[Math.abs(hash % colors.length)];
     }
 
+    /* ورود فقط با اسم */
     function login(){
-
         let name = document.getElementById("name").value.trim();
-
         if(!name){
             alert("اسم وارد کن");
             return;
@@ -154,34 +112,19 @@
         username = name;
 
         document.getElementById("login").style.display = "none";
-
-        document.getElementById("chatPage").style.display = "block";
+        document.getElementById("chat").style.display = "block";
     }
 
+    /* ارسال پیام */
     function send(){
 
-        document.getElementById("text").addEventListener("keydown", function(e){
-
-            if(e.key === "Enter"){
-
-                e.preventDefault();
-
-                send();
-            }
-
-        });
-        
         let textInput = document.getElementById("text");
-
         let imageInput = document.getElementById("image");
 
-        let text = textInput.value;
-
+        let text = textInput.value.trim();
         let file = imageInput.files[0];
 
-        if(!text && !file){
-            return;
-        }
+        if(!text && !file) return;
 
         if(file){
 
@@ -209,48 +152,48 @@
         }
 
         textInput.value = "";
-
         imageInput.value = "";
     }
 
+    /* نمایش پیام */
     function addMessage(data){
 
         let div = document.createElement("div");
-
         div.className = "msg";
-
         div.id = "m"+data.id;
 
         div.innerHTML = `
         <div class="name" style="color:${getColor(data.name)}">
             ${data.name}
         </div>
-
         <div>${data.text || ""}</div>
-
         ${data.image ? `<img src="${data.image}">` : ""}
     `;
 
         document.getElementById("messages").appendChild(div);
-
-        let messages = document.getElementById("messages");
-
         messages.scrollTop = messages.scrollHeight;
     }
 
+    /* دریافت پیام */
     socket.on("chat message", addMessage);
 
+    /* لود پیام‌های قبلی */
     socket.on("load messages",(msgs)=>{
         msgs.forEach(addMessage);
     });
 
+    /* حذف پیام بعد 1 دقیقه */
     socket.on("delete message",(id)=>{
         let el = document.getElementById("m"+id);
-        if(el){
-            el.remove();
-        }
+        if(el) el.remove();
     });
 
+    /* Enter برای ارسال (موبایل + دسکتاپ) */
+    document.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){
+            send();
+        }
+    });
 
 </script>
 
