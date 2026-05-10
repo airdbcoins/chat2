@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>Chat</title>
+
+<style>
+body{
+    margin:0;
+    background:#111;
+    color:#fff;
+    font-family:tahoma;
+}
+
+#login,#chatPage{
+    max-width:500px;
+    margin:auto;
+    padding:20px;
+}
+
+input,button{
+    width:100%;
+    padding:12px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    box-sizing:border-box;
+}
+
+input{
+    background:#222;
+    color:#fff;
+}
+
+button{
+    background:#444;
+    color:#fff;
+    cursor:pointer;
+}
+
+#messages{
+    height:70vh;
+    overflow:auto;
+    margin-bottom:10px;
+}
+
+.msg{
+    background:#222;
+    padding:10px;
+    border-radius:10px;
+    margin-top:10px;
+    word-break:break-word;
+}
+
+.msg img{
+    max-width:100%;
+    border-radius:10px;
+    margin-top:5px;
+}
+
+.small{
+    font-size:12px;
+    opacity:.7;
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+    <h2>ورود</h2>
+
+    <input type="text" id="name" placeholder="اسم">
+
+    <input type="password" id="pass" placeholder="پسورد 1 تا 9">
+
+    <button onclick="login()">ورود</button>
+</div>
+
+<div id="chatPage" style="display:none;">
+
+    <div id="messages"></div>
+
+    <input type="text" id="text" placeholder="پیام">
+
+    <input type="file" id="image">
+
+    <button onclick="send()">ارسال</button>
+
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+let username = "";
+const socket = io();
+
+function login(){
+
+    let name = document.getElementById("name").value.trim();
+    let pass = document.getElementById("pass").value.trim();
+
+    if(!name){
+        alert("اسم وارد کن");
+        return;
+    }
+
+    if(!/^[1-9]$/.test(pass)){
+        alert("پسورد فقط 1 تا 9");
+        return;
+    }
+
+    username = name;
+
+    login.style.display = "none";
+    chatPage.style.display = "block";
+}
+
+function send(){
+
+    let text = document.getElementById("text").value;
+    let file = document.getElementById("image").files[0];
+
+    if(file){
+
+        let reader = new FileReader();
+
+        reader.onload = function(e){
+
+            socket.emit("chat message",{
+                name: username,
+                text: text,
+                image: e.target.result
+            });
+
+        };
+
+        reader.readAsDataURL(file);
+
+    }else{
+
+        socket.emit("chat message",{
+            name: username,
+            text: text
+        });
+
+    }
+
+    text.value = "";
+    image.value = "";
+
+}
+
+function addMessage(data){
+
+    let div = document.createElement("div");
+
+    div.className = "msg";
+
+    div.id = "m"+data.id;
+
+    div.innerHTML = `
+        <div class="small">${data.name}</div>
+        <div>${data.text}</div>
+        ${data.image ? `<img src="${data.image}">` : ""}
+    `;
+
+    messages.appendChild(div);
+
+    messages.scrollTop = messages.scrollHeight;
+}
+
+socket.on("chat message", addMessage);
+
+socket.on("load messages",(msgs)=>{
+    msgs.forEach(addMessage);
+});
+
+socket.on("delete message",(id)=>{
+    let el = document.getElementById("m"+id);
+    if(el) el.remove();
+});
+
+</script>
+
+</body>
+</html>
