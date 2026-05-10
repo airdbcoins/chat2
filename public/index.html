@@ -1,90 +1,114 @@
 <!DOCTYPE html>
 <html lang="fa">
 <head>
-<meta charset="UTF-8">
-<title>Chat</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chat</title>
 
-<style>
-body{
-    margin:0;
-    background:#111;
-    color:#fff;
-    font-family:tahoma;
-}
+    <style>
 
-#login,#chatPage{
-    max-width:500px;
-    margin:auto;
-    padding:20px;
-}
+        *{
+            box-sizing:border-box;
+        }
 
-input,button{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:8px;
-    box-sizing:border-box;
-}
+        body{
+            margin:0;
+            background:#0f0f0f;
+            color:#fff;
+            font-family:tahoma;
+        }
 
-input{
-    background:#222;
-    color:#fff;
-}
+        #login,
+        #chatPage{
+            max-width:600px;
+            margin:auto;
+            padding:15px;
+        }
 
-button{
-    background:#444;
-    color:#fff;
-    cursor:pointer;
-}
+        h2{
+            text-align:center;
+        }
 
-#messages{
-    height:70vh;
-    overflow:auto;
-    margin-bottom:10px;
-}
+        input,
+        button{
+            width:100%;
+            padding:14px;
+            border:none;
+            border-radius:12px;
+            margin-top:10px;
+            font-size:15px;
+        }
 
-.msg{
-    background:#222;
-    padding:10px;
-    border-radius:10px;
-    margin-top:10px;
-    word-break:break-word;
-}
+        input{
+            background:#1e1e1e;
+            color:#fff;
+        }
 
-.msg img{
-    max-width:100%;
-    border-radius:10px;
-    margin-top:5px;
-}
+        button{
+            background:#333;
+            color:#fff;
+            cursor:pointer;
+        }
 
-.small{
-    font-size:12px;
-    opacity:.7;
-}
-</style>
+        #messages{
+            height:70vh;
+            overflow:auto;
+            padding-bottom:10px;
+        }
+
+        .msg{
+            background:#1b1b1b;
+            padding:10px;
+            border-radius:14px;
+            margin-top:10px;
+        }
+
+        .name{
+            font-weight:bold;
+            margin-bottom:5px;
+        }
+
+        .msg img{
+            max-width:100%;
+            border-radius:12px;
+            margin-top:8px;
+        }
+
+        .bottom{
+            position:sticky;
+            bottom:0;
+            background:#0f0f0f;
+            padding-top:10px;
+        }
+
+    </style>
 </head>
+
 <body>
 
 <div id="login">
-    <h2>ورود</h2>
 
-    <input type="text" id="name" placeholder="اسم">
+    <h2>ورود به چت</h2>
 
-    <input type="password" id="pass" placeholder="پسورد 1 تا 9">
+    <input type="text" id="name" placeholder="اسم خودتو وارد کن">
 
     <button onclick="login()">ورود</button>
+
 </div>
 
 <div id="chatPage" style="display:none;">
 
     <div id="messages"></div>
 
-    <input type="text" id="text" placeholder="پیام">
+    <div class="bottom">
 
-    <input type="file" id="image">
+        <input type="text" id="text" placeholder="پیام">
 
-    <button onclick="send()">ارسال</button>
+        <input type="file" id="image">
+
+        <button onclick="send()">ارسال</button>
+
+    </div>
 
 </div>
 
@@ -92,96 +116,129 @@ button{
 
 <script>
 
-let username = "";
-const socket = io();
+    const socket = io();
 
-function login(){
+    let username = "";
 
-    let name = document.getElementById("name").value.trim();
-    let pass = document.getElementById("pass").value.trim();
+    const colors = [
+        "#ff6b6b",
+        "#4ecdc4",
+        "#ffe66d",
+        "#5fa8ff",
+        "#c77dff",
+        "#ff9f1c",
+        "#2ec4b6",
+        "#f72585"
+    ];
 
-    if(!name){
-        alert("اسم وارد کن");
-        return;
+    function getColor(name){
+
+        let hash = 0;
+
+        for(let i=0;i<name.length;i++){
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+
+        return colors[Math.abs(hash % colors.length)];
     }
 
-    pass = pass.replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+    function login(){
 
-    if(pass < 1 || pass > 9){
-        alert("پسورد فقط عدد 1 تا 9");
-        return;
+        let name = document.getElementById("name").value.trim();
+
+        if(!name){
+            alert("اسم وارد کن");
+            return;
+        }
+
+        username = name;
+
+        document.getElementById("login").style.display = "none";
+
+        document.getElementById("chatPage").style.display = "block";
     }
 
-    username = name;
+    function send(){
 
-    document.getElementById("login").style.display = "none";
-    document.getElementById("chatPage").style.display = "block";
-}
+        let textInput = document.getElementById("text");
 
-function send(){
+        let imageInput = document.getElementById("image");
 
-    let text = document.getElementById("text").value;
-    let file = document.getElementById("image").files[0];
+        let text = textInput.value;
 
-    if(file){
+        let file = imageInput.files[0];
 
-        let reader = new FileReader();
+        if(!text && !file){
+            return;
+        }
 
-        reader.onload = function(e){
+        if(file){
+
+            let reader = new FileReader();
+
+            reader.onload = function(e){
+
+                socket.emit("chat message",{
+                    name: username,
+                    text: text,
+                    image: e.target.result
+                });
+
+            };
+
+            reader.readAsDataURL(file);
+
+        }else{
 
             socket.emit("chat message",{
                 name: username,
-                text: text,
-                image: e.target.result
+                text: text
             });
 
-        };
+        }
 
-        reader.readAsDataURL(file);
+        textInput.value = "";
 
-    }else{
-
-        socket.emit("chat message",{
-            name: username,
-            text: text
-        });
-
+        imageInput.value = "";
     }
 
-    text.value = "";
-    image.value = "";
+    function addMessage(data){
 
-}
+        let div = document.createElement("div");
 
-function addMessage(data){
+        div.className = "msg";
 
-    let div = document.createElement("div");
+        div.id = "m"+data.id;
 
-    div.className = "msg";
+        div.innerHTML = `
+        <div class="name" style="color:${getColor(data.name)}">
+            ${data.name}
+        </div>
 
-    div.id = "m"+data.id;
+        <div>${data.text || ""}</div>
 
-    div.innerHTML = `
-        <div class="small">${data.name}</div>
-        <div>${data.text}</div>
         ${data.image ? `<img src="${data.image}">` : ""}
     `;
 
-    messages.appendChild(div);
+        document.getElementById("messages").appendChild(div);
 
-    messages.scrollTop = messages.scrollHeight;
-}
+        let messages = document.getElementById("messages");
 
-socket.on("chat message", addMessage);
+        messages.scrollTop = messages.scrollHeight;
+    }
 
-socket.on("load messages",(msgs)=>{
-    msgs.forEach(addMessage);
-});
+    socket.on("chat message", addMessage);
 
-socket.on("delete message",(id)=>{
-    let el = document.getElementById("m"+id);
-    if(el) el.remove();
-});
+    socket.on("load messages",(msgs)=>{
+        msgs.forEach(addMessage);
+    });
+
+    socket.on("delete message",(id)=>{
+        let el = document.getElementById("m"+id);
+        if(el){
+            el.remove();
+        }
+    });
 
 </script>
 
